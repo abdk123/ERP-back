@@ -21,6 +21,7 @@ namespace Bwire.Roles.Dto
             CreateMap<Role, RoleDto>().ForMember(x => x.GrantedPermissions,
                 opt => opt.MapFrom(x => x.Permissions.Where(p => p.IsGranted)));
 
+            CreateMap<Role, ReadRoleDto>();
             CreateMap<Role, RoleListDto>();
             CreateMap<Role, RoleEditDto>();
             CreateMap<Permission, FlatPermissionDto>();

@@ -13,11 +13,13 @@ using Bwire.Authorization.Roles;
 using Bwire.Authorization.Users;
 using Bwire.Roles.Dto;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Syncfusion.EJ2.Base;
 
 namespace Bwire.Roles
 {
-    [AbpAuthorize(PermissionNames.Pages_Roles)]
+    //[AbpAuthorize(PermissionNames.Pages_Roles)]
     public class RoleAppService : AsyncCrudAppService<Role, RoleDto, int, PagedRoleResultRequestDto, CreateRoleDto, RoleDto>, IRoleAppService
     {
         private readonly RoleManager _roleManager;
@@ -143,6 +145,56 @@ namespace Bwire.Roles
                 GrantedPermissionNames = grantedPermissions.Select(p => p.Name).ToList()
             };
         }
+
+        public List<RoleDto> GetAllRoles()
+        {
+            var roles = _roleManager.Roles.ToList();
+            return ObjectMapper.Map<List<RoleDto>>(roles);
+        }
+
+        public async Task<RoleDto> UpdateAndGetAsync(RoleDto input)
+        {
+            var role = await _roleManager.GetRoleByIdAsync(input.Id);
+
+            ObjectMapper.Map<RoleDto, Role>(input, role);
+
+            await _roleManager.UpdateAsync(role);
+
+            return input;
+        }
+
+        [HttpPost]
+        public async Task<ReadGrudDto> GetForGrid([FromBody] DataManagerRequest dm)
+        {
+            var data = await this.Repository.GetAllListAsync();
+            IEnumerable<ReadRoleDto> users = ObjectMapper.Map<List<ReadRoleDto>>(data);
+
+            var operations = new DataOperations();
+            if (dm.Where != null && dm.Where.Count > 0)
+            {
+                users = operations.PerformFiltering(users, dm.Where, "and");
+            }
+
+            if (dm.Sorted != null && dm.Sorted.Count > 0)
+            {
+                users = operations.PerformSorting(users, dm.Sorted);
+            }
+
+            var count = users.Count();
+
+            if (dm.Skip != 0)
+            {
+                users = operations.PerformSkip(users, dm.Skip);
+            }
+
+            if (dm.Take != 0)
+            {
+                users = operations.PerformTake(users, dm.Take);
+            }
+
+            return new ReadGrudDto() { result = users, count = count };
+        }
+
     }
 }
 
